@@ -1,46 +1,42 @@
 # -*- coding: utf-8 -*-
 """归并排序算法实现"""
 
+from typing import Any, Callable, Optional
 
-def merge_sort(arr):
-    """对列表进行归并排序（升序），返回排序后的新列表。
+
+def merge_sort(arr: list, key: Optional[Callable[[Any], Any]] = None,
+               reverse: bool = False) -> list:
+    """对列表进行归并排序，返回排序后的新列表（不修改原列表）。
+
+    只依赖 < 比较，元素无需实现 __eq__。稳定排序。
 
     时间复杂度：最坏/平均/最好均为 O(n log n)
-    空间复杂度：O(n)（归并时需要辅助空间），稳定排序
+    空间复杂度：O(n)（归并辅助空间与切片复制）
     """
-    if len(arr) <= 1:
-        return arr[:]
-    mid = len(arr) // 2
-    left = merge_sort(arr[:mid])
-    right = merge_sort(arr[mid:])
-    return _merge(left, right)
+    keyfn = key if key is not None else (lambda x: x)
 
+    def goes_first(a: Any, b: Any) -> bool:
+        """a 是否应排在 b 之前或与其并列（相等时取左侧元素，保证稳定性）"""
+        ka, kb = keyfn(a), keyfn(b)
+        return not (ka < kb) if reverse else not (kb < ka)
 
-def _merge(left, right):
-    """合并两个有序列表为一个有序列表。"""
-    result = []
-    i = j = 0
-    while i < len(left) and j < len(right):
-        # 使用 <= 保证相等元素保持原有顺序（稳定性）
-        if left[i] <= right[j]:
-            result.append(left[i])
-            i += 1
-        else:
-            result.append(right[j])
-            j += 1
-    result.extend(left[i:])
-    result.extend(right[j:])
-    return result
+    def sort(items: list) -> list:
+        if len(items) <= 1:
+            return items[:]
+        mid = len(items) // 2
+        left = sort(items[:mid])
+        right = sort(items[mid:])
+        merged = []
+        i = j = 0
+        while i < len(left) and j < len(right):
+            if goes_first(left[i], right[j]):
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                j += 1
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        return merged
 
-
-if __name__ == "__main__":
-    test_cases = [
-        [64, 34, 25, 12, 22, 11, 90],
-        [5, 1, 4, 2, 8],
-        [1, 2, 3, 4, 5],   # 已有序
-        [3],                # 单元素
-        [],                 # 空列表
-        [2, 2, 1, 1, 3],    # 含重复元素
-    ]
-    for case in test_cases:
-        print(f"原始: {case} -> 排序后: {merge_sort(case)}")
+    return sort(arr)
